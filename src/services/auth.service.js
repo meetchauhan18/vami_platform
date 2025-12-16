@@ -1,5 +1,6 @@
 import userRepository from "../repositories/user.repository.js";
 import bcrypt from "bcryptjs";
+import { generateAccessToken } from "../utils/jwt.utils.js";
 
 class AuthService {
   constructor(UserRepository) {
@@ -60,12 +61,26 @@ class AuthService {
         throw new Error("Invalid credentials");
       }
 
+      await this.UserRepository.updateLastLogin(user?._id);
+
+      // generate access and refresh token
+      const accessToken = generateAccessToken(user);
+      console.log("🚀 ~ AuthService ~ login ~ accessToken:", accessToken);
+
       // return user
       console.log("🚀 ~ AuthService ~ login ~ user:", user);
-      return user;
+      return { user, accessToken };
     } catch (error) {
       throw error;
     }
+  }
+
+  async getProfile(userId) {
+    const user = await this.UserRepository.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    return user;
   }
 }
 
