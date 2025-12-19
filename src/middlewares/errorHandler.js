@@ -30,7 +30,6 @@ const handleCastError = (err) => {
 };
 
 const normalizedErrors = (err) => {
-  console.log("🚀 ~ normalizedErrors ~ err:", err)
   if (err instanceof AppError) {
     return err;
   }
@@ -60,7 +59,6 @@ const errorHandler = (err, req, res, next) => {
   const statusCode = err.httpStatusCode || 500;
 
   const normalizedError = normalizedErrors(err) || err;
-  console.log("🚀 ~ errorHandler ~ normalizedError:", normalizedError)
 
   const message =
     normalizedError && typeof normalizedError.toJSON === "function"
@@ -70,7 +68,6 @@ const errorHandler = (err, req, res, next) => {
           httpStatusCode: normalizedError?.httpStatusCode || statusCode,
           message: normalizedError?.message || "Internal Server Error",
         };
-  console.log("🚀 ~ errorHandler ~ message:", message)
 
   res.status(statusCode).json({
     success: false,
