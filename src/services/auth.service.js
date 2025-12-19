@@ -22,7 +22,7 @@ class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 13);
 
     // create user
     const user = await this.UserRepository.create({

@@ -1,7 +1,7 @@
 import AppError from "../utils/AppError.js";
 
-const notFoundHandler = () => {
-  return AppError.notFoundError("The requested resource was not found.");
+const notFoundHandler = (req, res, next) => {
+  next(AppError.notFoundError(`Cannot ${req.method} ${req.originalUrl}`));
 };
 
 // Handle Mongoose Validation Error
@@ -53,6 +53,8 @@ const normalizedErrors = (err) => {
   if (err.name === "CastError") {
     return handleCastError(err);
   }
+
+  return AppError.internalServerError();
 };
 
 const errorHandler = (err, req, res, next) => {

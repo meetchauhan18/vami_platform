@@ -10,12 +10,18 @@ class UserRepository {
   }
 
   async findByIdentifier(identifier, selectPassword = false) {
-    return this.User.findOne({
+    const query = this.User.findOne({
       $or: [
         { email: identifier.toLowerCase() },
         { username: identifier.toLowerCase() },
       ],
-    }).select("+password");
+    });
+
+    if (selectPassword) {
+      query.select("+password");
+    }
+
+    return query;
   }
 
   async findById(id) {
