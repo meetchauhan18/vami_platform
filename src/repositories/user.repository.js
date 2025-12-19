@@ -35,6 +35,37 @@ class UserRepository {
       { new: true }
     );
   }
+
+  async updatePassword(userId, newPassword) {
+    return await this.User.findByIdAndUpdate(
+      userId,
+      {
+        $set: { password: newPassword },
+        $unset: {
+          passwordResetToken: "",
+          passwordResetExpires: "",
+        },
+      },
+      { new: true }
+    );
+  }
+
+  async findByResetToken(hashedToken, selectPassword = false) {
+    console.log(
+      "🚀 ~ UserRepository ~ findByResetToken ~ hashedToken:",
+      hashedToken
+    );
+    let query = this.User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: Date.now() },
+    }).select("+passwordResetToken +passwordResetExpires");
+
+    if (selectPassword) {
+      query = query.select("+password");
+    }
+
+    return query;
+  }
 }
 
 export default new UserRepository(User);

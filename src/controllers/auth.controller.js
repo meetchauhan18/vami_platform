@@ -33,6 +33,35 @@ class AuthController {
       data: user,
     });
   });
+
+  forgotPassword = asyncHandler(async (req, res) => {
+    const resetToken = await this.AuthService.forgotPassword(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Password reset token sent successfully",
+      token: resetToken,
+    });
+  });
+
+  resetPassword = asyncHandler(async (req, res) => {
+    // destructure token and password from req.body
+    const { token, password } = req.body;
+
+    // validate token and password
+    if (!token || !password) {
+      throw AppError.badRequestError("Token and password are required");
+    }
+
+    // get the user data after reset password
+    const user = await this.AuthService.resetPassword(token, password);
+
+    // return success response
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully",
+      data: user,
+    });
+  });
 }
 
 export default new AuthController(authService);

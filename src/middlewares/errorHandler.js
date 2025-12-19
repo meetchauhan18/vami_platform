@@ -24,6 +24,9 @@ const handleJWTError = () =>
 const handleJWTExpiredError = () =>
   new AppError("Your token has expired. Please log in again.", 401);
 
+const handleInvalidTokenError = () =>
+  new AppError("Invalid token. Please log in again.", 401);
+
 const handleCastError = (err) => {
   const message = `Resource not found. Invalid ${err.path}: ${err.value}`;
   return new AppError(message, 404);
@@ -50,6 +53,14 @@ const normalizedErrors = (err) => {
     return handleJWTExpiredError();
   }
 
+  if (err.name === "InvalidTokenError") {
+    return handleInvalidTokenError();
+  }
+
+  if (err.name === "JsonWebTokenError") {
+    return handleInvalidTokenError();
+  }
+
   if (err.name === "CastError") {
     return handleCastError(err);
   }
@@ -71,10 +82,18 @@ const errorHandler = (err, req, res, next) => {
           message: normalizedError?.message || "Internal Server Error",
         };
 
-  res.status(statusCode).json({
+  // Prepare response
+  const response = {
     success: false,
     error: message,
-  });
+  };
+
+  // Include stack trace only in development mode
+  if (process.env.NODE_ENV === "development") {
+    response.stack = err.stack;
+  }
+
+  res.status(statusCode).json(response);
 };
 
 export {
@@ -82,4 +101,9 @@ export {
   notFoundHandler,
   normalizedErrors,
   handleValidationError,
+  handleDuplicateKeyError,
+  handleJWTError,
+  handleJWTExpiredError,
+  handleInvalidTokenError,
+  handleCastError,
 };

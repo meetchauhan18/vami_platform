@@ -68,6 +68,67 @@ class AuthService {
     }
     return user;
   }
+
+  async forgotPassword(userData) {
+    const { email } = userData;
+    const user = await this.UserRepository.findByIdentifier(email);
+    if (!user) {
+      throw AppError.notFoundError("User does not exist");
+    }
+    const resetToken = user.generatePasswordResetToken();
+    console.log("Password Reset Token:", resetToken);
+    console.log(
+      "Reset URL:",
+      `http://localhost:3000/reset-password?token=${resetToken}`
+    );
+    await user.save({ validateBeforeSave: false });
+    return resetToken;
+  }
+
+  async resetPassword(token, newPassword) {
+    // validate token and password
+    if(!token || !newPassword){
+      throw AppError.badRequestError("Token and password are required");
+    }
+
+    // find user by reset token
+    const user = await this.UserRepository.findByResetToken(token, true);
+
+    // throw error if user not found
+    if (!user) {
+      throw AppError.notFoundError("User does not exist");
+    }
+
+    // check if new password is same as old password
+    const isPasswordValid = await bcrypt.compare(newPassword, user?.password);
+
+    // throw error if new password is same as old password
+    if(isPasswordValid){
+      throw AppError.unAuthorized("Password is same as old password");
+    }
+
+    // hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 13);
+
+    // update password
+    await this.UserRepository.updatePassword(user?._id, hashedPassword);
+
+    // find updated user
+    const updatedUser = await this.UserRepository.findById(user?._id);
+
+    // generate access token
+    const accessToken = generateAccessToken({
+      userId: updatedUser._id.toString(),
+      email: updatedUser.email,
+      role: updatedUser.role,
+    });
+
+    return {
+      message: "Password reset successfully",
+      user,
+      accessToken,
+    };
+  }
 }
 
 export default new AuthService(userRepository);

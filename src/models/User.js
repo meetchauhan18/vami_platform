@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
 
 const userSchema = new mongoose.Schema(
   {
@@ -45,6 +46,14 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -53,6 +62,23 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
+userSchema.index({ passwordResetToken: 1, passwordResetExpires: 1 });
+
+// Instance method (called on user document)
+userSchema.methods.generatePasswordResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  // Set expiration (10 minutes)
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+
+  // Return hashed token (to send via email)
+  return this.passwordResetToken;
+};
 
 const User = mongoose.model("User", userSchema);
 export default User;

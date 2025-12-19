@@ -1,18 +1,20 @@
 // libs import
 import express from "express";
 import crypto from "crypto";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import morgan from "morgan";
+import cors from "cors";
 
 // local imports
 import authRoutes from "./routes/auth.routes.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
+import logger from "./utils/logger.js";
+import { apiLimiter } from "./middlewares/rateLimiter.js";
 
 const app = express();
 
 // Middlewares
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   req.requestId = req.headers["x-request-id"] || crypto.randomUUID();
@@ -23,15 +25,9 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
-  standardHeaders: "draft-8", // draft-6: `RateLimit-*` headers; draft-7 & draft-8: combined `RateLimit` header
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers.
-  ipv6Subnet: 56, // Set to 60 or 64 to be less aggressive,
-});
 
 // Security Middlewares
 app.use(helmet());
@@ -60,7 +56,10 @@ app.get("/health", async (req, res) => {
 });
 
 // API Routes
-app.use("/api/v1/auth", limiter, authRoutes);
+
+// add limiter
+app.use("/api", apiLimiter);
+app.use("/api/v1/auth", authRoutes);
 
 // 404 handler
 app.use(notFoundHandler);
