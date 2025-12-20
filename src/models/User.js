@@ -54,6 +54,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+    passwordChangedAt: {
+      type: Date,
+      select: false,
+    },
     passwordResetToken: {
       type: String,
       select: false,
@@ -71,6 +75,7 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ email: 1 });
 userSchema.index({ username: 1 });
 userSchema.index({ passwordResetToken: 1, passwordResetExpires: 1 });
+userSchema.index({ emailVerificationToken: 1, emailVerificationExpires: 1 });
 
 // Instance method (called on user document)
 userSchema.methods.generatePasswordResetToken = function () {
@@ -90,7 +95,7 @@ userSchema.methods.generatePasswordResetToken = function () {
 
 userSchema.methods.generateEmailVerificationToken = function () {
   const verificationToken = crypto.randomBytes(32).toString("hex");
-  console.log("🚀 ~ verificationToken:", verificationToken)
+  console.log("🚀 ~ verificationToken:", verificationToken);
 
   this.emailVerificationToken = crypto
     .createHash("sha256")

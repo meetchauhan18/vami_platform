@@ -1,5 +1,4 @@
 import { asyncHandler } from "../middlewares/asyncHandler.js";
-import userRepository from "../repositories/user.repository.js";
 import authService from "../services/auth.service.js";
 
 class AuthController {
@@ -44,16 +43,10 @@ class AuthController {
   });
 
   resetPassword = asyncHandler(async (req, res) => {
-    // destructure token and password from req.body
-    const { token, password } = req.body;
-
-    // validate token and password
-    if (!token || !password) {
-      throw AppError.badRequestError("Token and password are required");
-    }
-
-    // get the user data after reset password
-    const user = await this.AuthService.resetPassword(token, password);
+    const user = await this.AuthService.resetPassword(
+      req.body.token,
+      req.body.password
+    );
 
     // return success response
     res.status(200).json({
@@ -64,15 +57,7 @@ class AuthController {
   });
 
   verifyEmail = asyncHandler(async (req, res) => {
-    // destructure token from req.query
-    const { token } = req.body;
-
-    // validate token
-    if (!token) {
-      throw AppError.badRequestError("Token is required");
-    }
-
-    const user = await this.AuthService.verifyEmail(token);
+    const user = await this.AuthService.verifyEmail(req.body.token);
     res.status(200).json({
       success: true,
       message: "Email verified successfully",

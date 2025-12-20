@@ -8,6 +8,8 @@ const validate = (schema) => {
       return next(AppError.validationError(error));
     }
 
+    // Assign sanitized value to req.body (includes Joi transformations like trim, lowercase)
+    req.body = value;
     next();
   };
 };

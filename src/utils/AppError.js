@@ -15,7 +15,7 @@ class AppError extends Error {
   }
 
   // Common Error Types
-  static badRequest(message = "Bad Request") {
+  static badRequestError(message = "Bad Request") {
     return new AppError(message, 400, "BAD_REQUEST");
   }
 

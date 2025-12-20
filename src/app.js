@@ -4,6 +4,8 @@ import crypto from "crypto";
 import helmet from "helmet";
 import morgan from "morgan";
 import cors from "cors";
+import mongoose from "mongoose";
+import compression from "compression";
 
 // local imports
 import authRoutes from "./routes/auth.routes.js";
@@ -31,6 +33,7 @@ app.use(
 
 // Security Middlewares
 app.use(helmet());
+app.use(compression());
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));

@@ -1,4 +1,5 @@
 import AppError from "../utils/AppError.js";
+import logger from "../utils/logger.js";
 
 const notFoundHandler = (req, res, next) => {
   next(AppError.notFoundError(`Cannot ${req.method} ${req.originalUrl}`));
@@ -57,10 +58,6 @@ const normalizedErrors = (err) => {
     return handleInvalidTokenError();
   }
 
-  if (err.name === "JsonWebTokenError") {
-    return handleInvalidTokenError();
-  }
-
   if (err.name === "CastError") {
     return handleCastError(err);
   }
@@ -69,16 +66,26 @@ const normalizedErrors = (err) => {
 };
 
 const errorHandler = (err, req, res, next) => {
-  const statusCode = err.httpStatusCode || 500;
-
   const normalizedError = normalizedErrors(err) || err;
+  const statusCode = normalizedError.httpStatusCode || 500;
+
+  // Log error with request context for observability
+  logger.error({
+    message: err.message,
+    code: normalizedError?.code || "INTERNAL_SERVER_ERROR",
+    statusCode,
+    requestId: req.requestId,
+    path: req.path,
+    method: req.method,
+    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+  });
 
   const message =
     normalizedError && typeof normalizedError.toJSON === "function"
       ? normalizedError.toJSON()
       : {
           code: normalizedError?.code || "INTERNAL_SERVER_ERROR",
-          httpStatusCode: normalizedError?.httpStatusCode || statusCode,
+          httpStatusCode: statusCode,
           message: normalizedError?.message || "Internal Server Error",
         };
 

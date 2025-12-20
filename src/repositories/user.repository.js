@@ -40,7 +40,10 @@ class UserRepository {
     return await this.User.findByIdAndUpdate(
       userId,
       {
-        $set: { password: newPassword },
+        $set: {
+          password: newPassword,
+          passwordChangedAt: new Date(),
+        },
         $unset: {
           passwordResetToken: "",
           passwordResetExpires: "",
@@ -51,12 +54,15 @@ class UserRepository {
   }
 
   async findByResetToken(hashedToken, selectPassword = false) {
-    console.log("🚀 ~ UserRepository ~ findByResetToken ~ hashedToken:", hashedToken)
+    console.log(
+      "🚀 ~ UserRepository ~ findByResetToken ~ hashedToken:",
+      hashedToken
+    );
     let query = this.User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     }).select("+passwordResetToken +passwordResetExpires");
-    console.log("🚀 ~ UserRepository ~ findByResetToken ~ query:", query)
+    console.log("🚀 ~ UserRepository ~ findByResetToken ~ query:", query);
 
     if (selectPassword) {
       query = query.select("+password");
@@ -66,12 +72,18 @@ class UserRepository {
   }
 
   async findByEmailVerificationToken(hashedToken, selectPassword = false) {
-    console.log("🚀 ~ UserRepository ~ findByEmailVerificationToken ~ hashedToken:", hashedToken)
+    console.log(
+      "🚀 ~ UserRepository ~ findByEmailVerificationToken ~ hashedToken:",
+      hashedToken
+    );
     let query = this.User.findOne({
       emailVerificationToken: hashedToken,
       emailVerificationExpires: { $gt: Date.now() },
     }).select("+emailVerificationToken +emailVerificationExpires");
-    console.log("🚀 ~ UserRepository ~ findByEmailVerificationToken ~ query:", query)
+    console.log(
+      "🚀 ~ UserRepository ~ findByEmailVerificationToken ~ query:",
+      query
+    );
 
     if (selectPassword) {
       query = query.select("+password");

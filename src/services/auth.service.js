@@ -13,40 +13,36 @@ class AuthService {
   }
 
   async register(userData) {
-    // get email from userData
     const { email, username, password } = userData;
 
     // check if user already exists
     const existingUser = await this.UserRepository.findByIdentifier(email);
 
-    // throw an error if user already exists
     if (existingUser) {
       throw AppError.conflictError(
         "User with this email or username already exists."
       );
     }
 
-    const hashedPassword = await bcrypt.hash(password, 13);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create user
+    // create user - returns the created document
     const user = await this.UserRepository.create({
       username,
       email,
       password: hashedPassword,
     });
 
-    const newUser = await this.UserRepository.findById(user?._id);
+    // generate verification token on the created user
+    const verificationToken = user.generateEmailVerificationToken();
 
-    const verificationToken = newUser.generateEmailVerificationToken();
-    console.log(
-      "🚀 ~ AuthService ~ register ~ verificationToken:",
-      verificationToken
+    // save token to database
+    await this.UserRepository.saveEmailVerificationToken(user);
+
+    // send email asynchronously - don't block response
+    this.EmailService.sendVerificationEmail(user, verificationToken).catch(
+      (err) => logger.error("Failed to send verification email:", err)
     );
-
-    // save user to persist token and expiration to database via repository
-    await this.UserRepository.saveEmailVerificationToken(newUser);
-
-    await this.EmailService.sendVerificationEmail(newUser, verificationToken);
 
     return user;
   }
@@ -54,27 +50,28 @@ class AuthService {
   async login(userData) {
     const { identifier, password } = userData;
 
-    // find user by email or username
     const user = await this.UserRepository.findByIdentifier(identifier, true);
 
     if (!user) {
-      throw AppError.notFoundError("Token is invalid or expired");
+      throw AppError.notFoundError("User does not exist");
     }
 
-    // check whether password is valid or not
-    const isPasswordValid = await bcrypt.compare(password, user?.password);
+    if (!user.isEmailVerified) {
+      throw AppError.unAuthorized(
+        "Email not verified. Please verify your email."
+      );
+    }
 
-    // if not throw error
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
     if (!isPasswordValid) {
       throw AppError.unAuthorized("Invalid credentials");
     }
 
-    await this.UserRepository.updateLastLogin(user?._id);
+    await this.UserRepository.updateLastLogin(user._id);
 
-    // generate access and refresh token
     const accessToken = generateAccessToken(user);
 
-    // return user
     return { user, accessToken };
   }
 
@@ -92,98 +89,87 @@ class AuthService {
     if (!user) {
       throw AppError.notFoundError("User does not exist");
     }
-    const resetToken = user.generatePasswordResetToken();
-    logger.info("Password Reset Token:", resetToken);
-    logger.info(
-      "Reset URL:",
-      `http://localhost:3000/reset-password?token=${resetToken}`
-    );
 
-    // save user to persist token and expiration to database via repository
+    const resetToken = user.generatePasswordResetToken();
+
+    // save token to database
     await this.UserRepository.savePasswordResetToken(user);
 
-    const updatedUser = await this.UserRepository.findById(user?._id);
+    // send email asynchronously - don't block response
+    this.EmailService.sendPasswordResetEmail(user, resetToken).catch((err) =>
+      logger.error("Failed to send password reset email:", err)
+    );
 
-    await this.EmailService.sendPasswordResetEmail(updatedUser, resetToken);
-
+    // NOTE: Remove token from response in production
     return resetToken;
   }
 
   async resetPassword(token, newPassword) {
-    // hash the incoming token to compare with stored hashed token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    // find user by reset token
     const user = await this.UserRepository.findByResetToken(hashedToken, true);
 
-    // throw error if user not found
     if (!user) {
-      throw AppError.notFoundError("User does not exist");
+      throw AppError.notFoundError("Invalid or expired reset token");
     }
 
-    // check if new password is same as old password
-    const isPasswordValid = await bcrypt.compare(newPassword, user?.password);
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
 
-    // throw error if new password is same as old password
-    if (isPasswordValid) {
-      throw AppError.unAuthorized("Password is same as old password");
+    if (isSamePassword) {
+      throw AppError.badRequestError(
+        "New password cannot be the same as the old password"
+      );
     }
 
-    // hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 13);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // update password
-    await this.UserRepository.updatePassword(user?._id, hashedPassword);
+    // updatePassword returns the updated user with { new: true }
+    const updatedUser = await this.UserRepository.updatePassword(
+      user._id,
+      hashedPassword
+    );
 
-    // find updated user
-    const updatedUser = await this.UserRepository.findById(user?._id);
-
-    // generate access token
     const accessToken = generateAccessToken({
       userId: updatedUser._id.toString(),
       email: updatedUser.email,
       role: updatedUser.role,
     });
 
-    await this.EmailService.resetPasswordSuccessful(updatedUser);
+    // send email asynchronously
+    this.EmailService.resetPasswordSuccessful(updatedUser).catch((err) =>
+      logger.error("Failed to send password reset success email:", err)
+    );
 
     return {
       message: "Password reset successfully",
-      user,
+      user: updatedUser,
       accessToken,
     };
   }
 
   async verifyEmail(token) {
-    console.log("🚀 ~ AuthService ~ verifyEmail ~ token:", token);
-    // hash the incoming token to compare with stored hashed token
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-    console.log("🚀 ~ AuthService ~ verifyEmail ~ hashedToken:", hashedToken);
 
-    // find user by reset token
-    const user = await this.UserRepository.findByEmailVerificationToken(
-      hashedToken,
-      true
-    );
-    console.log("🚀 ~ AuthService ~ verifyEmail ~ user:", user);
+    const user =
+      await this.UserRepository.findByEmailVerificationToken(hashedToken);
 
-    // throw error if user not found
     if (!user) {
-      throw AppError.notFoundError("User does not exist");
+      throw AppError.notFoundError("Invalid or expired verification token");
     }
 
-    // throw error if email already verified
-    if (user?.isEmailVerified) {
+    if (user.isEmailVerified) {
       throw AppError.badRequestError("Email already verified");
     }
 
-    // update email verification
-    await this.UserRepository.updateEmailVerification(user?._id);
+    // updateEmailVerification returns the updated user with { new: true }
+    const updatedUser = await this.UserRepository.updateEmailVerification(
+      user._id
+    );
 
-    // find updated user
-    const updatedUser = await this.UserRepository.findById(user?._id);
-
-    await this.EmailService.sendWelcomeEmail(updatedUser);
+    // send email asynchronously
+    this.EmailService.sendWelcomeEmail(updatedUser).catch((err) =>
+      logger.error("Failed to send welcome email:", err)
+    );
 
     return updatedUser;
   }
@@ -193,19 +179,21 @@ class AuthService {
     if (!user) {
       throw AppError.notFoundError("User does not exist");
     }
+
+    if (user.isEmailVerified) {
+      throw AppError.badRequestError("Email already verified");
+    }
+
     const verificationToken = user.generateEmailVerificationToken();
 
-    // save user to persist token and expiration to database via repository
     await this.UserRepository.saveEmailVerificationToken(user);
 
-    const updatedUser = await this.UserRepository.findById(user?._id);
-
-    await this.EmailService.sendVerificationEmail(
-      updatedUser,
-      verificationToken
+    // send email asynchronously
+    this.EmailService.sendVerificationEmail(user, verificationToken).catch(
+      (err) => logger.error("Failed to send verification email:", err)
     );
 
-    return updatedUser;
+    return user;
   }
 }
 

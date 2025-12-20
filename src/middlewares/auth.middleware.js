@@ -18,17 +18,31 @@ const authenticate = asyncHandler(async (req, res, next) => {
     return next(AppError.unAuthorized("Invalid access token."));
   }
 
-  const user = await userRepository?.findById(decodedToken?.id);
+  const user = await userRepository
+    .findById(decodedToken.id)
+    .select("+passwordChangedAt");
 
   if (!user) {
     return next(AppError.unAuthorized("This user no longer exists."));
   }
 
+  // Check if password was changed after token was issued
+  if (user.passwordChangedAt) {
+    const passwordChangedTimestamp = Math.floor(
+      user.passwordChangedAt.getTime() / 1000
+    );
+    if (decodedToken.iat < passwordChangedTimestamp) {
+      return next(
+        AppError.unAuthorized("Password changed. Please log in again.")
+      );
+    }
+  }
+
   req.user = {
-    _id: user?._id,
-    username: user?.username,
-    email: user?.email,
-    role: user?.role,
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
   };
 
   next();
