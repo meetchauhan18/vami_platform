@@ -85,3 +85,9 @@ export const resetPasswordSchema = Joi.object({
       "any.required": "Password is required",
     }),
 });
+
+export const verifyEmailSchema = Joi.object({
+  token: Joi.string().required().messages({
+    "any.required": "Verification token is required",
+  }),
+});

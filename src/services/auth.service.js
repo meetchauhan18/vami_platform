@@ -1,11 +1,15 @@
 import userRepository from "../repositories/user.repository.js";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { generateAccessToken } from "../utils/jwt.utils.js";
 import AppError from "../utils/AppError.js";
+import logger from "../utils/logger.js";
+import emailService from "./email.service.js";
 
 class AuthService {
-  constructor(UserRepository) {
+  constructor(UserRepository, EmailService) {
     this.UserRepository = UserRepository;
+    this.EmailService = EmailService;
   }
 
   async register(userData) {
@@ -31,6 +35,19 @@ class AuthService {
       password: hashedPassword,
     });
 
+    const newUser = await this.UserRepository.findById(user?._id);
+
+    const verificationToken = newUser.generateEmailVerificationToken();
+    console.log(
+      "🚀 ~ AuthService ~ register ~ verificationToken:",
+      verificationToken
+    );
+
+    // save user to persist token and expiration to database via repository
+    await this.UserRepository.saveEmailVerificationToken(newUser);
+
+    await this.EmailService.sendVerificationEmail(newUser, verificationToken);
+
     return user;
   }
 
@@ -41,7 +58,7 @@ class AuthService {
     const user = await this.UserRepository.findByIdentifier(identifier, true);
 
     if (!user) {
-      throw AppError.notFoundError("User does not exist");
+      throw AppError.notFoundError("Token is invalid or expired");
     }
 
     // check whether password is valid or not
@@ -76,23 +93,28 @@ class AuthService {
       throw AppError.notFoundError("User does not exist");
     }
     const resetToken = user.generatePasswordResetToken();
-    console.log("Password Reset Token:", resetToken);
-    console.log(
+    logger.info("Password Reset Token:", resetToken);
+    logger.info(
       "Reset URL:",
       `http://localhost:3000/reset-password?token=${resetToken}`
     );
-    await user.save({ validateBeforeSave: false });
+
+    // save user to persist token and expiration to database via repository
+    await this.UserRepository.savePasswordResetToken(user);
+
+    const updatedUser = await this.UserRepository.findById(user?._id);
+
+    await this.EmailService.sendPasswordResetEmail(updatedUser, resetToken);
+
     return resetToken;
   }
 
   async resetPassword(token, newPassword) {
-    // validate token and password
-    if(!token || !newPassword){
-      throw AppError.badRequestError("Token and password are required");
-    }
+    // hash the incoming token to compare with stored hashed token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     // find user by reset token
-    const user = await this.UserRepository.findByResetToken(token, true);
+    const user = await this.UserRepository.findByResetToken(hashedToken, true);
 
     // throw error if user not found
     if (!user) {
@@ -103,7 +125,7 @@ class AuthService {
     const isPasswordValid = await bcrypt.compare(newPassword, user?.password);
 
     // throw error if new password is same as old password
-    if(isPasswordValid){
+    if (isPasswordValid) {
       throw AppError.unAuthorized("Password is same as old password");
     }
 
@@ -123,12 +145,68 @@ class AuthService {
       role: updatedUser.role,
     });
 
+    await this.EmailService.resetPasswordSuccessful(updatedUser);
+
     return {
       message: "Password reset successfully",
       user,
       accessToken,
     };
   }
+
+  async verifyEmail(token) {
+    console.log("🚀 ~ AuthService ~ verifyEmail ~ token:", token);
+    // hash the incoming token to compare with stored hashed token
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    console.log("🚀 ~ AuthService ~ verifyEmail ~ hashedToken:", hashedToken);
+
+    // find user by reset token
+    const user = await this.UserRepository.findByEmailVerificationToken(
+      hashedToken,
+      true
+    );
+    console.log("🚀 ~ AuthService ~ verifyEmail ~ user:", user);
+
+    // throw error if user not found
+    if (!user) {
+      throw AppError.notFoundError("User does not exist");
+    }
+
+    // throw error if email already verified
+    if (user?.isEmailVerified) {
+      throw AppError.badRequestError("Email already verified");
+    }
+
+    // update email verification
+    await this.UserRepository.updateEmailVerification(user?._id);
+
+    // find updated user
+    const updatedUser = await this.UserRepository.findById(user?._id);
+
+    await this.EmailService.sendWelcomeEmail(updatedUser);
+
+    return updatedUser;
+  }
+
+  async resendVerificationEmail(userId) {
+    const user = await this.UserRepository.findById(userId);
+    if (!user) {
+      throw AppError.notFoundError("User does not exist");
+    }
+    const verificationToken = user.generateEmailVerificationToken();
+
+    // save user to persist token and expiration to database via repository
+    await this.UserRepository.saveEmailVerificationToken(user);
+
+    const updatedUser = await this.UserRepository.findById(user?._id);
+
+    await this.EmailService.sendVerificationEmail(
+      updatedUser,
+      verificationToken
+    );
+
+    return updatedUser;
+  }
 }
 
-export default new AuthService(userRepository);
+export default new AuthService(userRepository, emailService);

@@ -62,6 +62,32 @@ class AuthController {
       data: user,
     });
   });
+
+  verifyEmail = asyncHandler(async (req, res) => {
+    // destructure token from req.query
+    const { token } = req.body;
+
+    // validate token
+    if (!token) {
+      throw AppError.badRequestError("Token is required");
+    }
+
+    const user = await this.AuthService.verifyEmail(token);
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+      data: user,
+    });
+  });
+
+  resendVerificationEmail = asyncHandler(async (req, res) => {
+    const user = await this.AuthService.resendVerificationEmail(req.user?._id);
+    res.status(200).json({
+      success: true,
+      message: "Verification email sent successfully",
+      data: user,
+    });
+  });
 }
 
 export default new AuthController(authService);

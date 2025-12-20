@@ -51,20 +51,55 @@ class UserRepository {
   }
 
   async findByResetToken(hashedToken, selectPassword = false) {
-    console.log(
-      "🚀 ~ UserRepository ~ findByResetToken ~ hashedToken:",
-      hashedToken
-    );
+    console.log("🚀 ~ UserRepository ~ findByResetToken ~ hashedToken:", hashedToken)
     let query = this.User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     }).select("+passwordResetToken +passwordResetExpires");
+    console.log("🚀 ~ UserRepository ~ findByResetToken ~ query:", query)
 
     if (selectPassword) {
       query = query.select("+password");
     }
 
     return query;
+  }
+
+  async findByEmailVerificationToken(hashedToken, selectPassword = false) {
+    console.log("🚀 ~ UserRepository ~ findByEmailVerificationToken ~ hashedToken:", hashedToken)
+    let query = this.User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpires: { $gt: Date.now() },
+    }).select("+emailVerificationToken +emailVerificationExpires");
+    console.log("🚀 ~ UserRepository ~ findByEmailVerificationToken ~ query:", query)
+
+    if (selectPassword) {
+      query = query.select("+password");
+    }
+
+    return query;
+  }
+
+  async updateEmailVerification(userId) {
+    return await this.User.findByIdAndUpdate(
+      userId,
+      {
+        $set: { isEmailVerified: true },
+        $unset: {
+          emailVerificationToken: "",
+          emailVerificationExpires: "",
+        },
+      },
+      { new: true }
+    );
+  }
+
+  async saveEmailVerificationToken(user) {
+    return await user.save({ validateBeforeSave: false });
+  }
+
+  async savePasswordResetToken(user) {
+    return await user.save({ validateBeforeSave: false });
   }
 }
 
