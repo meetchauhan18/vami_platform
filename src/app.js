@@ -9,10 +9,13 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 
 // local imports
-import authRoutes from "./routes/auth.routes.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
 import logger from "./utils/logger.js";
 import { apiLimiter } from "./middlewares/rateLimiter.js";
+
+// routes imports
+import authRoutes from "./routes/auth.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
 
 const app = express();
 
@@ -65,6 +68,7 @@ app.get("/health", async (req, res) => {
 // add limiter
 app.use("/api", apiLimiter);
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/admin", adminRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

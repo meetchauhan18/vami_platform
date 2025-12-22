@@ -46,8 +46,6 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   req.user = {
     _id: user._id,
-    username: user.username,
-    email: user.email,
     role: user.role,
   };
 
