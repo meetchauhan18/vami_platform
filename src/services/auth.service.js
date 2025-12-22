@@ -1,4 +1,5 @@
 import userRepository from "../repositories/user.repository.js";
+import refreshTokenRepository from "../repositories/refresh-token.repository.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { generateAccessToken } from "../utils/jwt.utils.js";
@@ -7,11 +8,13 @@ import logger from "../utils/logger.js";
 import emailService from "./email.service.js";
 
 class AuthService {
-  constructor(UserRepository, EmailService) {
+  constructor(UserRepository, EmailService, RefreshTokenRepository) {
     this.UserRepository = UserRepository;
     this.EmailService = EmailService;
+    this.RefreshTokenRepository = RefreshTokenRepository;
   }
 
+  // register service
   async register(userData) {
     const { email, username, password } = userData;
 
@@ -47,8 +50,9 @@ class AuthService {
     return user;
   }
 
-  async login(userData) {
-    const { identifier, password } = userData;
+  // login service
+  async login(userData, createdByIp, userAgent) {
+    const { identifier, password, rememberMe } = userData;
 
     const user = await this.UserRepository.findByIdentifier(identifier, true);
 
@@ -71,10 +75,21 @@ class AuthService {
     await this.UserRepository.updateLastLogin(user._id);
 
     const accessToken = generateAccessToken(user);
+    const refreshToken = crypto.randomBytes(64).toString("hex");
 
-    return { user, accessToken };
+    const newRefreshTokenDoc =
+      await this.RefreshTokenRepository.createRefreshToken({
+        userId: user._id,
+        token: refreshToken,
+        expiresAt: Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+        createdByIp,
+        userAgent,
+      });
+
+    return { user, accessToken, refreshToken: newRefreshTokenDoc?.token };
   }
 
+  // find profile services
   async getProfile(userId) {
     const user = await this.UserRepository.findById(userId);
     if (!user) {
@@ -83,6 +98,7 @@ class AuthService {
     return user;
   }
 
+  // forgot password service
   async forgotPassword(userData) {
     const { email } = userData;
     const user = await this.UserRepository.findByIdentifier(email);
@@ -104,7 +120,14 @@ class AuthService {
     return resetToken;
   }
 
-  async resetPassword(token, newPassword) {
+  // reset password service
+  async resetPassword(
+    token,
+    newPassword,
+    createdByIp,
+    userAgent,
+    rememberMe = false
+  ) {
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user = await this.UserRepository.findByResetToken(hashedToken, true);
@@ -129,11 +152,18 @@ class AuthService {
       hashedPassword
     );
 
-    const accessToken = generateAccessToken({
-      userId: updatedUser._id.toString(),
-      email: updatedUser.email,
-      role: updatedUser.role,
-    });
+    const accessToken = generateAccessToken(updatedUser);
+
+    const refreshToken = crypto.randomBytes(64).toString("hex");
+
+    const newRefreshTokenDoc =
+      await this.RefreshTokenRepository.createRefreshToken({
+        userId: updatedUser._id,
+        token: refreshToken,
+        expiresAt: Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+        createdByIp,
+        userAgent,
+      });
 
     // send email asynchronously
     this.EmailService.resetPasswordSuccessful(updatedUser).catch((err) =>
@@ -141,12 +171,13 @@ class AuthService {
     );
 
     return {
-      message: "Password reset successfully",
       user: updatedUser,
       accessToken,
+      refreshToken: newRefreshTokenDoc?.token,
     };
   }
 
+  // verify email service
   async verifyEmail(token) {
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
@@ -174,6 +205,7 @@ class AuthService {
     return updatedUser;
   }
 
+  // resend verification email service
   async resendVerificationEmail(userId) {
     const user = await this.UserRepository.findById(userId);
     if (!user) {
@@ -195,6 +227,29 @@ class AuthService {
 
     return user;
   }
+
+  // logout service
+  async logout(currentRefreshToken, createdByIp) {
+    await this.RefreshTokenRepository.revokeToken(
+      currentRefreshToken,
+      createdByIp
+    );
+    return true;
+  }
+
+  // logout all service
+  async logoutAll(userId, createdByIp) {
+    console.log("🚀 ~ AuthService ~ logoutAll ~ userId:", userId)
+    await this.RefreshTokenRepository.revokeAllTokenForUser(
+      userId,
+      createdByIp
+    );
+    return true;
+  }
 }
 
-export default new AuthService(userRepository, emailService);
+export default new AuthService(
+  userRepository,
+  emailService,
+  refreshTokenRepository
+);

@@ -20,6 +20,10 @@ const {
   forgotPassword,
   resetPassword,
   verifyEmail,
+  resendVerificationEmail,
+  refreshToken,
+  logout,
+  logoutAll
 } = authController;
 
 router.post("/register", registerLimiter, validate(registerSchema), register);
@@ -47,7 +51,10 @@ router.post(
   "/resend-verification",
   authLimiter,
   authenticate,
-  authController.resendVerificationEmail
+  resendVerificationEmail
 );
+router.post("/refresh-token", refreshToken);
+router.post("/logout", authenticate, logout);
+router.post("/logout-all", authenticate, logoutAll);
 
 export default router;

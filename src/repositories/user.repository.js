@@ -25,7 +25,7 @@ class UserRepository {
   }
 
   async findById(id) {
-    return this.User.findById(id);
+    return this.User.findById(id).select("+passwordChangedAt");
   }
 
   async updateLastLogin(userId) {

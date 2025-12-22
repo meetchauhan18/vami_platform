@@ -6,6 +6,7 @@ import morgan from "morgan";
 import cors from "cors";
 import mongoose from "mongoose";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 
 // local imports
 import authRoutes from "./routes/auth.routes.js";
@@ -18,6 +19,7 @@ const app = express();
 // Middlewares
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use((req, res, next) => {
   req.requestId = req.headers["x-request-id"] || crypto.randomUUID();
   res.set("x-request-id", req.requestId);

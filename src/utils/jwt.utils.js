@@ -14,12 +14,14 @@ export const generateAccessToken = (user) => {
   );
 };
 
-export const generateRefreshToken = (user) => {
+export const generateRefreshToken = (user, ip, token, userAgent) => {
   return jwt.sign(
     {
-      id: user?._id,
-      email: user.email,
-      role: user.role
+      token: token,
+      expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 days
+      userId: user?._id,
+      createdByIp: ip,
+      userAgent: userAgent,
     },
     process.env.JWT_REFRESH_SECRET,
     {
@@ -29,11 +31,21 @@ export const generateRefreshToken = (user) => {
 };
 
 export const verifyAccessToken = (token) => {
-  return jwt.verify(token, process.env.JWT_SECRET);
+  return jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return null;
+    }
+    return decoded;
+  });
 };
 
 export const verifyRefreshToken = (token) => {
-  return jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+  return jwt.verify(token, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
+    if (err) {
+      return null;
+    }
+    return decoded;
+  });
 };
 
 export const decodeToken = (token) => {

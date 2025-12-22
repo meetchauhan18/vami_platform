@@ -59,6 +59,7 @@ export const loginSchema = Joi.object({
         "Password must contain uppercase, lowercase, number, and special character",
       "any.required": "Password is required",
     }),
+  rememberMe: Joi.boolean().default(false),
 });
 
 export const forgotPasswordSchema = Joi.object({
@@ -91,3 +92,9 @@ export const verifyEmailSchema = Joi.object({
     "any.required": "Verification token is required",
   }),
 });
+
+export const refreshTokenSchema = Joi.object({
+  refreshToken: Joi.string().required().messages({
+    "any.required": "Refresh token is required",
+  }),
+})
