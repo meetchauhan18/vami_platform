@@ -1,4 +1,4 @@
-import User from "../models/User.js";
+import User from "./models/User.js";
 
 class UserRepository {
   constructor(UserModel) {
@@ -54,15 +54,10 @@ class UserRepository {
   }
 
   async findByResetToken(hashedToken, selectPassword = false) {
-    console.log(
-      "🚀 ~ UserRepository ~ findByResetToken ~ hashedToken:",
-      hashedToken
-    );
     let query = this.User.findOne({
       passwordResetToken: hashedToken,
       passwordResetExpires: { $gt: Date.now() },
     }).select("+passwordResetToken +passwordResetExpires");
-    console.log("🚀 ~ UserRepository ~ findByResetToken ~ query:", query);
 
     if (selectPassword) {
       query = query.select("+password");
@@ -72,18 +67,10 @@ class UserRepository {
   }
 
   async findByEmailVerificationToken(hashedToken, selectPassword = false) {
-    console.log(
-      "🚀 ~ UserRepository ~ findByEmailVerificationToken ~ hashedToken:",
-      hashedToken
-    );
     let query = this.User.findOne({
       emailVerificationToken: hashedToken,
       emailVerificationExpires: { $gt: Date.now() },
     }).select("+emailVerificationToken +emailVerificationExpires");
-    console.log(
-      "🚀 ~ UserRepository ~ findByEmailVerificationToken ~ query:",
-      query
-    );
 
     if (selectPassword) {
       query = query.select("+password");

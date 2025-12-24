@@ -95,7 +95,6 @@ userSchema.methods.generatePasswordResetToken = function () {
 
 userSchema.methods.generateEmailVerificationToken = function () {
   const verificationToken = crypto.randomBytes(32).toString("hex");
-  console.log("🚀 ~ verificationToken:", verificationToken);
 
   this.emailVerificationToken = crypto
     .createHash("sha256")

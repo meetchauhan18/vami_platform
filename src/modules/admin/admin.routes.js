@@ -2,9 +2,9 @@
 import express from "express";
 
 // local imports
-import authenticate from "../middlewares/auth.middleware.js";
-import { authorize } from "../middlewares/authorize.middleware.js";
-import adminController from "../controllers/admin.controller.js";
+import authenticate from "../../shared/middlewares/auth.middleware.js";
+import { authorize } from "../../shared/middlewares/authorize.middleware.js";
+import adminController from "./admin.controller.js";
 
 const router = express.Router();
 const { getUsers, getSystemStats } = adminController;

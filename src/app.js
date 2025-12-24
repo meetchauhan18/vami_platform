@@ -9,13 +9,16 @@ import compression from "compression";
 import cookieParser from "cookie-parser";
 
 // local imports
-import { errorHandler, notFoundHandler } from "./middlewares/errorHandler.js";
-import logger from "./utils/logger.js";
-import { apiLimiter } from "./middlewares/rateLimiter.js";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./shared/middlewares/errorHandler.js";
+import logger from "./shared/utils/logger.js";
+import { apiLimiter } from "./shared/middlewares/rateLimiter.js";
 
 // routes imports
-import authRoutes from "./routes/auth.routes.js";
-import adminRoutes from "./routes/admin.routes.js";
+import authRoutes from "./modules/auth/auth.routes.js";
+import adminRoutes from "./modules/admin/admin.routes.js";
 
 const app = express();
 

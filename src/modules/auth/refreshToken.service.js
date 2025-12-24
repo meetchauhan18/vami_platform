@@ -2,9 +2,9 @@
 import crypto from "crypto";
 
 // local imports
-import refreshTokenRepository from "../repositories/refresh-token.repository.js";
-import AppError from "../utils/AppError.js";
-import { generateAccessToken } from "../utils/jwt.utils.js";
+import refreshTokenRepository from "./refresh-token.repository.js";
+import AppError from "../../shared/utils/AppError.js";
+import { generateAccessToken } from "../../shared/utils/jwt.utils.js";
 
 class RefreshTokenService {
   constructor(RefreshTokenRepository) {

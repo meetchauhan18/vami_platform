@@ -1,4 +1,4 @@
-import userRepository from "../repositories/user.repository.js";
+import userRepository from "../../modules/user/user.repository.js";
 import AppError from "../utils/AppError.js";
 import { verifyAccessToken } from "../utils/jwt.utils.js";
 import { asyncHandler } from "./asyncHandler.js";

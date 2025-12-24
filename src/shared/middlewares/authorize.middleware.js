@@ -2,7 +2,6 @@ import AppError from "../utils/AppError.js";
 
 export const authorize = (...allowedRoles) => {
   return (req, res, next) => {
-    console.log("🚀 ~ authorize ~ req:", req)
     if (!req.user) {
       throw next(new AppError("Unauthorized", 401));
     }

@@ -1,5 +1,5 @@
-import User from "../models/User.js";
-import RefreshToken from "../models/RefreshToken.js";
+import User from "../user/models/User.js";
+import RefreshToken from "../auth/models/RefreshToken.js";
 
 class SystemRepository {
   constructor(UserModel, RefreshTokenModel) {
@@ -8,7 +8,10 @@ class SystemRepository {
   }
 
   async getUsers() {
-    return await this.User.find().select('email role isActive isEmailVerified createdAt').sort({ createdAt: -1 }).limit(50);
+    return await this.User.find()
+      .select("email role isActive isEmailVerified createdAt")
+      .sort({ createdAt: -1 })
+      .limit(50);
   }
 
   async getSystemStats() {

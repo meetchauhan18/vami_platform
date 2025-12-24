@@ -33,8 +33,6 @@ class EmailService {
   }
 
   async sendVerificationEmail(user, verificationToken) {
-    console.log("🚀 ~ EmailService ~ sendVerificationEmail ~ verificationToken:", verificationToken)
-    console.log("🚀 ~ EmailService ~ sendVerificationEmail ~ user:", user)
     const verificationUrl = `http://localhost:5173/verify-email?token=${verificationToken}`;
 
     const html = `
@@ -328,7 +326,7 @@ class EmailService {
     });
   }
 
-  async resetPasswordSuccessful(user){
+  async resetPasswordSuccessful(user) {
     const html = `
       <!DOCTYPE html>
       <html>

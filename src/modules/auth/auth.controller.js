@@ -1,6 +1,7 @@
-import { asyncHandler } from "../middlewares/asyncHandler.js";
-import authService from "../services/auth.service.js";
-import refreshTokenService from "../services/refreshToken.service.js";
+import { asyncHandler } from "../../shared/middlewares/asyncHandler.js";
+import authService from "./auth.service.js";
+import refreshTokenService from "./refreshToken.service.js";
+
 class AuthController {
   constructor(AuthService, RefreshTokenService) {
     this.AuthService = AuthService;

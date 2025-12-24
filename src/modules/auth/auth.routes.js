@@ -1,15 +1,18 @@
 import express from "express";
-import authController from "../controllers/auth.controller.js";
-import validate from "../middlewares/validate.js";
+import authController from "./auth.controller.js";
+import validate from "../../shared/middlewares/validate.js";
 import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
   resetPasswordSchema,
   verifyEmailSchema,
-} from "../validators/auth.validators.js";
-import authenticate from "../middlewares/auth.middleware.js";
-import { authLimiter, registerLimiter } from "../middlewares/rateLimiter.js";
+} from "./auth.validator.js";
+import authenticate from "../../shared/middlewares/auth.middleware.js";
+import {
+  authLimiter,
+  registerLimiter,
+} from "../../shared/middlewares/rateLimiter.js";
 
 const router = express.Router();
 
@@ -23,7 +26,7 @@ const {
   resendVerificationEmail,
   refreshToken,
   logout,
-  logoutAll
+  logoutAll,
 } = authController;
 
 router.post("/register", registerLimiter, validate(registerSchema), register);

@@ -1,4 +1,4 @@
-import RefreshToken from "../models/RefreshToken.js";
+import RefreshToken from "./models/RefreshToken.js";
 
 class RefreshTokenRepository {
   constructor(RefreshToken) {

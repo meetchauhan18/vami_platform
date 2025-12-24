@@ -1,9 +1,9 @@
 // local imports
-import authService from "../services/auth.service.js";
-import refreshTokenService from "../services/refreshToken.service.js";
-import emailService from "../services/email.service.js";
-import { asyncHandler } from "../middlewares/asyncHandler.js";
-import systemService from "../services/system.service.js";
+import authService from "../auth/auth.service.js";
+import refreshTokenService from "../auth/refreshToken.service.js";
+import emailService from "../../shared/services/email.service.js";
+import { asyncHandler } from "../../shared/middlewares/asyncHandler.js";
+import systemService from "./system.service.js";
 
 class AdminController {
   constructor(AuthService, SystemService, RefreshTokenService, EmailService) {

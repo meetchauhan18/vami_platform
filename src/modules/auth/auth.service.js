@@ -1,11 +1,11 @@
-import userRepository from "../repositories/user.repository.js";
-import refreshTokenRepository from "../repositories/refresh-token.repository.js";
+import userRepository from "../user/user.repository.js";
+import refreshTokenRepository from "./refresh-token.repository.js";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import { generateAccessToken } from "../utils/jwt.utils.js";
-import AppError from "../utils/AppError.js";
-import logger from "../utils/logger.js";
-import emailService from "./email.service.js";
+import { generateAccessToken } from "../../shared/utils/jwt.utils.js";
+import AppError from "../../shared/utils/AppError.js";
+import logger from "../../shared/utils/logger.js";
+import emailService from "../../shared/services/email.service.js";
 
 class AuthService {
   constructor(UserRepository, EmailService, RefreshTokenRepository) {
@@ -239,7 +239,6 @@ class AuthService {
 
   // logout all service
   async logoutAll(userId, createdByIp) {
-    console.log("🚀 ~ AuthService ~ logoutAll ~ userId:", userId)
     await this.RefreshTokenRepository.revokeAllTokenForUser(
       userId,
       createdByIp

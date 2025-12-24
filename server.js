@@ -4,9 +4,9 @@ dotenv.config();
 
 // local imports
 import app from "./src/app.js";
-import { closeDB, connectDB } from "./src/config/database.js";
-import { validateEnv } from "./src/config/validateEnv.js";
-import logger from "./src/utils/logger.js";
+import { closeDB, connectDB } from "./src/shared/config/database.js";
+import { validateEnv } from "./src/shared/config/validateEnv.js";
+import logger from "./src/shared/utils/logger.js";
 
 const PORT = process.env.PORT || 3000;
 
