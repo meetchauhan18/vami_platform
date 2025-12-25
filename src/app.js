@@ -19,6 +19,7 @@ import { apiLimiter } from "./shared/middlewares/rateLimiter.js";
 // routes imports
 import authRoutes from "./modules/auth/auth.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
+import userRoutes from "./modules/user/user.routes.js";
 
 const app = express();
 
@@ -53,6 +54,8 @@ if (process.env.NODE_ENV === "development") {
   );
 }
 
+
+// health route
 app.get("/health", async (req, res) => {
   const dbStatus =
     mongoose.connection.readyState === 1 ? "connected" : "disconnected";
@@ -72,6 +75,7 @@ app.get("/health", async (req, res) => {
 app.use("/api", apiLimiter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/users", userRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

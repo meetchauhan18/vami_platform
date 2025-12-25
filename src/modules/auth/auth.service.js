@@ -6,20 +6,23 @@ import { generateAccessToken } from "../../shared/utils/jwt.utils.js";
 import AppError from "../../shared/utils/AppError.js";
 import logger from "../../shared/utils/logger.js";
 import emailService from "../../shared/services/email.service.js";
+import { TOKEN_EXPIRY } from "../../shared/constants/index.js";
 
 class AuthService {
   constructor(UserRepository, EmailService, RefreshTokenRepository) {
-    this.UserRepository = UserRepository;
-    this.EmailService = EmailService;
-    this.RefreshTokenRepository = RefreshTokenRepository;
+    this.userRepository = UserRepository;
+    this.emailService = EmailService;
+    this.refreshTokenRepository = RefreshTokenRepository;
   }
 
-  // register service
+  /**
+   * Register a new user
+   */
   async register(userData) {
     const { email, username, password } = userData;
 
-    // check if user already exists
-    const existingUser = await this.UserRepository.findByIdentifier(email);
+    // Check if user already exists
+    const existingUser = await this.userRepository.findByIdentifier(email);
 
     if (existingUser) {
       throw AppError.conflictError(
@@ -29,32 +32,34 @@ class AuthService {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // create user - returns the created document
-    const user = await this.UserRepository.create({
+    // Create user
+    const user = await this.userRepository.create({
       username,
       email,
       password: hashedPassword,
     });
 
-    // generate verification token on the created user
+    // Generate verification token
     const verificationToken = user.generateEmailVerificationToken();
 
-    // save token to database
-    await this.UserRepository.saveEmailVerificationToken(user);
+    // Save token to database
+    await this.userRepository.save(user);
 
-    // send email asynchronously - don't block response
-    this.EmailService.sendVerificationEmail(user, verificationToken).catch(
-      (err) => logger.error("Failed to send verification email:", err)
-    );
+    // Send email asynchronously
+    this.emailService
+      .sendVerificationEmail(user, verificationToken)
+      .catch((err) => logger.error("Failed to send verification email:", err));
 
     return user;
   }
 
-  // login service
+  /**
+   * Login user
+   */
   async login(userData, createdByIp, userAgent) {
     const { identifier, password, rememberMe } = userData;
 
-    const user = await this.UserRepository.findByIdentifier(identifier, true);
+    const user = await this.userRepository.findByIdentifier(identifier, true);
 
     if (!user) {
       throw AppError.notFoundError("User does not exist");
@@ -72,16 +77,21 @@ class AuthService {
       throw AppError.unAuthorized("Invalid credentials");
     }
 
-    await this.UserRepository.updateLastLogin(user._id);
+    // Update last login
+    await this.userRepository.update(user._id, { lastLogin: new Date() });
 
     const accessToken = generateAccessToken(user);
     const refreshToken = crypto.randomBytes(64).toString("hex");
 
+    const expiresAt = rememberMe
+      ? Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN_REMEMBER
+      : Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN_DEFAULT;
+
     const newRefreshTokenDoc =
-      await this.RefreshTokenRepository.createRefreshToken({
+      await this.refreshTokenRepository.createRefreshToken({
         userId: user._id,
         token: refreshToken,
-        expiresAt: Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+        expiresAt,
         createdByIp,
         userAgent,
       });
@@ -89,38 +99,47 @@ class AuthService {
     return { user, accessToken, refreshToken: newRefreshTokenDoc?.token };
   }
 
-  // find profile services
+  /**
+   * Get user profile by ID
+   */
   async getProfile(userId) {
-    const user = await this.UserRepository.findById(userId);
+    const user = await this.userRepository.findById(userId);
     if (!user) {
       throw AppError.notFoundError("User not found");
     }
     return user;
   }
 
-  // forgot password service
+  /**
+   * Forgot password - send reset email
+   */
   async forgotPassword(userData) {
     const { email } = userData;
-    const user = await this.UserRepository.findByIdentifier(email);
+    const user = await this.userRepository.findByIdentifier(email);
+
     if (!user) {
       throw AppError.notFoundError("User does not exist");
     }
 
     const resetToken = user.generatePasswordResetToken();
 
-    // save token to database
-    await this.UserRepository.savePasswordResetToken(user);
+    // Save token to database
+    await this.userRepository.save(user);
 
-    // send email asynchronously - don't block response
-    this.EmailService.sendPasswordResetEmail(user, resetToken).catch((err) =>
-      logger.error("Failed to send password reset email:", err)
-    );
+    // Send email asynchronously
+    this.emailService
+      .sendPasswordResetEmail(user, resetToken)
+      .catch((err) =>
+        logger.error("Failed to send password reset email:", err)
+      );
 
     // NOTE: Remove token from response in production
     return resetToken;
   }
 
-  // reset password service
+  /**
+   * Reset password with token
+   */
   async resetPassword(
     token,
     newPassword,
@@ -130,7 +149,7 @@ class AuthService {
   ) {
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
-    const user = await this.UserRepository.findByResetToken(hashedToken, true);
+    const user = await this.userRepository.findByResetToken(hashedToken, true);
 
     if (!user) {
       throw AppError.notFoundError("Invalid or expired reset token");
@@ -146,29 +165,40 @@ class AuthService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // updatePassword returns the updated user with { new: true }
-    const updatedUser = await this.UserRepository.updatePassword(
-      user._id,
-      hashedPassword
-    );
+    // Update password and clear reset token
+    const updatedUser = await this.userRepository.update(user._id, {
+      $set: {
+        password: hashedPassword,
+        passwordChangedAt: new Date(),
+      },
+      $unset: {
+        passwordResetToken: "",
+        passwordResetExpires: "",
+      },
+    });
 
     const accessToken = generateAccessToken(updatedUser);
-
     const refreshToken = crypto.randomBytes(64).toString("hex");
 
+    const expiresAt = rememberMe
+      ? Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN_REMEMBER
+      : Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN_DEFAULT;
+
     const newRefreshTokenDoc =
-      await this.RefreshTokenRepository.createRefreshToken({
+      await this.refreshTokenRepository.createRefreshToken({
         userId: updatedUser._id,
         token: refreshToken,
-        expiresAt: Date.now() + (rememberMe ? 30 : 7) * 24 * 60 * 60 * 1000,
+        expiresAt,
         createdByIp,
         userAgent,
       });
 
-    // send email asynchronously
-    this.EmailService.resetPasswordSuccessful(updatedUser).catch((err) =>
-      logger.error("Failed to send password reset success email:", err)
-    );
+    // Send success email
+    this.emailService
+      .resetPasswordSuccessful(updatedUser)
+      .catch((err) =>
+        logger.error("Failed to send password reset success email:", err)
+      );
 
     return {
       user: updatedUser,
@@ -177,12 +207,14 @@ class AuthService {
     };
   }
 
-  // verify email service
+  /**
+   * Verify email with token
+   */
   async verifyEmail(token) {
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     const user =
-      await this.UserRepository.findByEmailVerificationToken(hashedToken);
+      await this.userRepository.findByEmailVerificationToken(hashedToken);
 
     if (!user) {
       throw AppError.notFoundError("Invalid or expired verification token");
@@ -192,22 +224,29 @@ class AuthService {
       throw AppError.badRequestError("Email already verified");
     }
 
-    // updateEmailVerification returns the updated user with { new: true }
-    const updatedUser = await this.UserRepository.updateEmailVerification(
-      user._id
-    );
+    // Update email verification and clear token
+    const updatedUser = await this.userRepository.update(user._id, {
+      $set: { isEmailVerified: true },
+      $unset: {
+        emailVerificationToken: "",
+        emailVerificationExpires: "",
+      },
+    });
 
-    // send email asynchronously
-    this.EmailService.sendWelcomeEmail(updatedUser).catch((err) =>
-      logger.error("Failed to send welcome email:", err)
-    );
+    // Send welcome email
+    this.emailService
+      .sendWelcomeEmail(updatedUser)
+      .catch((err) => logger.error("Failed to send welcome email:", err));
 
     return updatedUser;
   }
 
-  // resend verification email service
+  /**
+   * Resend verification email
+   */
   async resendVerificationEmail(userId) {
-    const user = await this.UserRepository.findById(userId);
+    const user = await this.userRepository.findById(userId);
+
     if (!user) {
       throw AppError.notFoundError("User does not exist");
     }
@@ -218,28 +257,32 @@ class AuthService {
 
     const verificationToken = user.generateEmailVerificationToken();
 
-    await this.UserRepository.saveEmailVerificationToken(user);
+    await this.userRepository.save(user);
 
-    // send email asynchronously
-    this.EmailService.sendVerificationEmail(user, verificationToken).catch(
-      (err) => logger.error("Failed to send verification email:", err)
-    );
+    // Send email asynchronously
+    this.emailService
+      .sendVerificationEmail(user, verificationToken)
+      .catch((err) => logger.error("Failed to send verification email:", err));
 
     return user;
   }
 
-  // logout service
+  /**
+   * Logout user (revoke current token)
+   */
   async logout(currentRefreshToken, createdByIp) {
-    await this.RefreshTokenRepository.revokeToken(
+    await this.refreshTokenRepository.revokeToken(
       currentRefreshToken,
       createdByIp
     );
     return true;
   }
 
-  // logout all service
+  /**
+   * Logout from all devices
+   */
   async logoutAll(userId, createdByIp) {
-    await this.RefreshTokenRepository.revokeAllTokenForUser(
+    await this.refreshTokenRepository.revokeAllTokenForUser(
       userId,
       createdByIp
     );

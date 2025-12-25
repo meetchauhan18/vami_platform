@@ -5,8 +5,14 @@ class UserRepository {
     this.User = UserModel;
   }
 
+  // ========== GENERIC CRUD OPERATIONS ==========
+
   async create(userData) {
     return this.User.create(userData);
+  }
+
+  async findById(id, selectFields = "") {
+    return this.User.findById(id).select(selectFields || "+passwordChangedAt");
   }
 
   async findByIdentifier(identifier, selectPassword = false) {
@@ -24,34 +30,19 @@ class UserRepository {
     return query;
   }
 
-  async findById(id) {
-    return this.User.findById(id).select("+passwordChangedAt");
+  async findByUsername(username) {
+    return this.User.findOne({ username: username.toLowerCase() });
   }
 
-  async updateLastLogin(userId) {
-    return await this.User.findByIdAndUpdate(
-      userId,
-      { lastLogin: new Date() },
-      { new: true }
-    );
+  async update(userId, updateData, options = { new: true }) {
+    return this.User.findByIdAndUpdate(userId, updateData, options);
   }
 
-  async updatePassword(userId, newPassword) {
-    return await this.User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {
-          password: newPassword,
-          passwordChangedAt: new Date(),
-        },
-        $unset: {
-          passwordResetToken: "",
-          passwordResetExpires: "",
-        },
-      },
-      { new: true }
-    );
+  async delete(userId) {
+    return this.User.findByIdAndDelete(userId);
   }
+
+  // ========== AUTH-SPECIFIC QUERIES ==========
 
   async findByResetToken(hashedToken, selectPassword = false) {
     let query = this.User.findOne({
@@ -66,39 +57,17 @@ class UserRepository {
     return query;
   }
 
-  async findByEmailVerificationToken(hashedToken, selectPassword = false) {
-    let query = this.User.findOne({
+  async findByEmailVerificationToken(hashedToken) {
+    return this.User.findOne({
       emailVerificationToken: hashedToken,
       emailVerificationExpires: { $gt: Date.now() },
     }).select("+emailVerificationToken +emailVerificationExpires");
-
-    if (selectPassword) {
-      query = query.select("+password");
-    }
-
-    return query;
   }
 
-  async updateEmailVerification(userId) {
-    return await this.User.findByIdAndUpdate(
-      userId,
-      {
-        $set: { isEmailVerified: true },
-        $unset: {
-          emailVerificationToken: "",
-          emailVerificationExpires: "",
-        },
-      },
-      { new: true }
-    );
-  }
+  // ========== DOCUMENT SAVE (for token generation) ==========
 
-  async saveEmailVerificationToken(user) {
-    return await user.save({ validateBeforeSave: false });
-  }
-
-  async savePasswordResetToken(user) {
-    return await user.save({ validateBeforeSave: false });
+  async save(user) {
+    return user.save({ validateBeforeSave: false });
   }
 }
 

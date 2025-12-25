@@ -46,7 +46,32 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   req.user = {
     _id: user._id,
+    username: user.username,
+    email: user.email,
     role: user.role,
+    profile: {
+      displayName: user.profile.displayName,
+      bio: user.profile.bio,
+      avatar: user.profile.avatar,
+      coverImage: user.profile.coverImage,
+      location: user.profile.location,
+      website: user.profile.website,
+      socialLinks: user.profile.socialLinks,
+    },
+    preferences: {
+      theme: user.preferences.theme,
+      emailDigest: user.preferences.emailDigest,
+      language: user.preferences.language,
+    },
+    creatorProfile: {
+      isCreator: user.creatorProfile.isCreator,
+      isVerified: user.creatorProfile.isVerified,
+      expertise: user.creatorProfile.expertise,
+      featuredWork: user.creatorProfile.featuredWork,
+    },
+    isEmailVerified: user.isEmailVerified,
+    isActive: user.isActive,
+    lastLogin: user.lastLogin,
   };
 
   next();

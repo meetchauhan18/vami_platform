@@ -46,6 +46,8 @@ const userSchema = new mongoose.Schema(
     lastLogin: {
       type: Date,
     },
+
+    // email verification token and expiration
     emailVerificationToken: {
       type: String,
       select: false,
@@ -54,6 +56,8 @@ const userSchema = new mongoose.Schema(
       type: Date,
       select: false,
     },
+
+    // password reset token and expiration
     passwordChangedAt: {
       type: Date,
       select: false,
@@ -65,6 +69,54 @@ const userSchema = new mongoose.Schema(
     passwordResetExpires: {
       type: Date,
       select: false,
+    },
+
+    // Profile sub-schema
+    profile: {
+      displayName: { type: String, maxlength: 50 },
+      bio: { type: String, maxlength: 300 },
+      avatar: {
+        url: { type: String },
+        key: { type: String }, // S3 key for deletion
+      },
+      coverImage: {
+        url: { type: String },
+        key: { type: String }, 
+      },
+      location: { type: String, maxlength: 100 },
+      website: { type: String },
+      socialLinks: [
+        {
+          platform: {
+            type: String,
+            enum: ["twitter", "github", "linkedin", "instagram", "youtube"],
+          },
+          url: { type: String },
+        },
+      ],
+    },
+
+    // Creator profile
+    creatorProfile: {
+      isCreator: { type: Boolean, default: false },
+      isVerified: { type: Boolean, default: false },
+      expertise: [{ type: String }],
+      featuredWork: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
+    },
+
+    // User preferences
+    preferences: {
+      theme: {
+        type: String,
+        enum: ["light", "dark", "system"],
+        default: "system",
+      },
+      emailDigest: {
+        type: String,
+        enum: ["daily", "weekly", "never"],
+        default: "weekly",
+      },
+      language: { type: String, default: "en" },
     },
   },
   {
