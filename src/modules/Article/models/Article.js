@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 const articleSchema = new mongoose.Schema(
   {
     // Author reference
@@ -89,3 +91,7 @@ articleSchema.index({ author: 1, status: 1 });
 articleSchema.index({ tags: 1 });
 articleSchema.index({ publishedAt: -1 });
 articleSchema.index({ "stats.views": -1 });
+
+const Article = mongoose.model("Article", articleSchema);
+
+export default Article;

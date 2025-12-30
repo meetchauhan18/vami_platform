@@ -20,6 +20,7 @@ import { apiLimiter } from "./shared/middlewares/rateLimiter.js";
 import authRoutes from "./modules/auth/auth.routes.js";
 import adminRoutes from "./modules/admin/admin.routes.js";
 import userRoutes from "./modules/user/user.routes.js";
+import articleRoutes from "./modules/Article/article.routes.js";
 
 const app = express();
 
@@ -54,7 +55,6 @@ if (process.env.NODE_ENV === "development") {
   );
 }
 
-
 // health route
 app.get("/health", async (req, res) => {
   const dbStatus =
@@ -76,6 +76,7 @@ app.use("/api", apiLimiter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/articles", articleRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

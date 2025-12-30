@@ -1,8 +1,17 @@
 import express from "express";
 import authenticate from "../../shared/middlewares/auth.middleware.js";
-import validate from "../../shared/middlewares/validate.js";
+import optionalAuth from "../../shared/middlewares/optionalAuth.middleware.js";
+import validate, {
+  validateParams,
+  validateQuery,
+} from "../../shared/middlewares/validate.js";
 import userController from "./user.controller.js";
+import articleController from "../Article/article.controller.js";
 import { updateProfileSchema } from "./user.validator.js";
+import {
+  usernameParamSchema,
+  paginationQuerySchema,
+} from "../Article/article.validator.js";
 import {
   avatarUpload,
   coverUpload,
@@ -21,11 +30,27 @@ const {
   deleteCoverImage,
 } = userController;
 
-// Current user routes
+const { getMyArticles, getUserArticles } = articleController;
+
+// ========== CURRENT USER ROUTES ==========
+
+// Get current user's profile
 router.get("/me", authenticate, getMyProfile);
+
+// Update current user's profile
 router.patch("/me", authenticate, validate(updateProfileSchema), updateProfile);
 
-// Avatar routes (with multer error handling)
+// Get current user's articles (all statuses)
+// GET /api/v1/users/me/articles?status=draft&page=1&limit=10
+router.get(
+  "/me/articles",
+  authenticate,
+  validateQuery(paginationQuerySchema),
+  getMyArticles
+);
+
+// ========== AVATAR ROUTES ==========
+
 router.post(
   "/me/avatar",
   authenticate,
@@ -35,7 +60,8 @@ router.post(
 );
 router.delete("/me/avatar", authenticate, deleteAvatar);
 
-// Cover image routes (with multer error handling)
+// ========== COVER IMAGE ROUTES ==========
+
 router.post(
   "/me/cover",
   authenticate,
@@ -45,7 +71,19 @@ router.post(
 );
 router.delete("/me/cover", authenticate, deleteCoverImage);
 
-// Public profile route (must be last due to :username param)
+// ========== PUBLIC ROUTES (param-based, must be last) ==========
+
+// Get user's public profile
 router.get("/:username", getPublicProfile);
+
+// Get user's published articles
+// GET /api/v1/users/:username/articles?page=1&limit=10
+router.get(
+  "/:username/articles",
+  optionalAuth,
+  validateParams(usernameParamSchema),
+  validateQuery(paginationQuerySchema),
+  getUserArticles
+);
 
 export default router;
