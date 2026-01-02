@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
+import { TOKEN_EXPIRY } from "../../../shared/constants/index.js";
 
 const userSchema = new mongoose.Schema(
   {
@@ -139,7 +140,7 @@ userSchema.methods.generatePasswordResetToken = function () {
     .digest("hex");
 
   // Set expiration (10 minutes)
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetExpires = Date.now() + TOKEN_EXPIRY.PASSWORD_RESET;
 
   // Return unhashed token (to send via email)
   return resetToken;
@@ -154,7 +155,7 @@ userSchema.methods.generateEmailVerificationToken = function () {
     .digest("hex");
 
   // Set expiration (10 minutes)
-  this.emailVerificationExpires = Date.now() + 10 * 60 * 1000;
+  this.emailVerificationExpires = Date.now() + TOKEN_EXPIRY.EMAIL_VERIFICATION;
 
   // Return unhashed token (to send via email)
   return verificationToken;
