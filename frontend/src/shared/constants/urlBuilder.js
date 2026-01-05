@@ -61,18 +61,13 @@ class UrlBuilder {
   // ============================================
   user = {
     me: () => this.build("/users/me"),
-
     myArticles: (params) => this.buildWithQuery("/users/me/articles", params),
-
     avatar: () => this.build("/users/me/avatar"),
-
     cover: () => this.build("/users/me/cover"),
-
     byUsername: (username) => {
       const sanitized = this.sanitize(username);
       return this.build(`/users/${sanitized}`);
     },
-
     userArticles: (username, params) => {
       const sanitized = this.sanitize(username);
       return this.buildWithQuery(`/users/${sanitized}/articles`, params);
@@ -84,39 +79,31 @@ class UrlBuilder {
   // ============================================
   article = {
     list: (params) => this.buildWithQuery("/articles", params),
-
     create: () => this.build("/articles"),
-
     bySlug: (slug) => {
       const sanitized = this.sanitize(slug);
       return this.build(`/articles/${sanitized}`);
     },
-
     byId: (id) => {
       if (!id) throw new Error("Article ID is required");
       return this.build(`/articles/id/${id}`);
     },
-
     update: (id) => {
       if (!id) throw new Error("Article ID is required");
       return this.build(`/articles/${id}`);
     },
-
     delete: (id) => {
       if (!id) throw new Error("Article ID is required");
       return this.build(`/articles/${id}`);
     },
-
     publish: (id) => {
       if (!id) throw new Error("Article ID is required");
       return this.build(`/articles/${id}/publish`);
     },
-
     unpublish: (id) => {
       if (!id) throw new Error("Article ID is required");
       return this.build(`/articles/${id}/unpublish`);
     },
-
     byTag: (tag, params) => {
       const sanitized = this.sanitize(tag);
       return this.buildWithQuery(`/articles/tag/${sanitized}`, params);

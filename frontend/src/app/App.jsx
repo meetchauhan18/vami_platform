@@ -1,9 +1,5 @@
-import { useEffect, useState } from "react";
+// local imports
 import "./App.css";
-import { authService, articleService } from "../services";
-import apiClient from "../shared/api/apiClient";
-import { urlBuilder } from "../shared/constants/urlBuilder.js";
-import axios from "axios";
 
 function App() {
   return (
