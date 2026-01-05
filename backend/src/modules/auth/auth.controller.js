@@ -145,6 +145,12 @@ class AuthController {
   });
 
   logout = asyncHandler(async (req, res) => {
+    if(!req.user){
+      res.status(401).json({
+      success: false,
+      message: "User not loggedIn",
+    });
+    }
     await this.AuthService.logout(req.cookies.refreshToken, req.ip);
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken", { path: "/api/v1/auth" });

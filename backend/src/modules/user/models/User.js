@@ -125,8 +125,6 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
 userSchema.index({ passwordResetToken: 1, passwordResetExpires: 1 });
 userSchema.index({ emailVerificationToken: 1, emailVerificationExpires: 1 });
 

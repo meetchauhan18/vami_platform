@@ -93,6 +93,7 @@ const errorHandler = (err, req, res, next) => {
   const response = {
     success: false,
     error: message,
+    requestId: req.requestId
   };
 
   // Include stack trace only in development mode

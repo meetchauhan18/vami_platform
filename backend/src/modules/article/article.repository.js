@@ -73,7 +73,7 @@ class ArticleRepository {
       );
     }
 
-    return mongoQuery;
+    return await mongoQuery.lean().exec();
   };
 
   /**

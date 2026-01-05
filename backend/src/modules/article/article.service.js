@@ -192,44 +192,47 @@ class ArticleService {
       );
     }
 
-    const updates = {};
+    const setUpdates = {};
 
     // Update title and regenerate slug if title changed
     if (updateData.title !== undefined && updateData.title !== article.title) {
-      updates.title = updateData.title;
-      updates.slug = generateUniqueSlug(updateData.title);
+      setUpdates.title = updateData.title;
+      setUpdates.slug = generateUniqueSlug(updateData.title);
     }
 
     // Update subtitle
     if (updateData.subtitle !== undefined) {
-      updates.subtitle = updateData.subtitle;
+      setUpdates.subtitle = updateData.subtitle;
     }
 
     // Update content and recalculate metadata
     if (updateData.content !== undefined) {
-      updates.content = updateData.content;
-      updates.plainText = extractPlainText(updateData.content);
+      setUpdates.content = updateData.content;
+      setUpdates.plainText = extractPlainText(updateData.content);
 
       const metadata = calculateArticleMetadata(updateData.content);
-      updates["metadata.wordCount"] = metadata.wordCount;
-      updates["metadata.readingTime"] = metadata.readingTime;
-      updates["metadata.excerpt"] = metadata.excerpt;
+      setUpdates["metadata.wordCount"] = metadata.wordCount;
+      setUpdates["metadata.readingTime"] = metadata.readingTime;
+      setUpdates["metadata.excerpt"] = metadata.excerpt;
     }
 
     // Update tags
     if (updateData.tags !== undefined) {
-      updates.tags = updateData.tags;
+      setUpdates.tags = updateData.tags;
     }
 
     // Update cover image
     if (updateData.coverImage !== undefined) {
-      updates["metadata.coverImage"] = updateData.coverImage;
+      setUpdates["metadata.coverImage"] = updateData.coverImage;
     }
 
-    // Increment version
-    updates.$inc = { version: 1 };
+    // Build proper update object with explicit operators
+    const updateQuery = {
+      $set: setUpdates,
+      $inc: { version: 1 },
+    };
 
-    const updatedArticle = await this.articleRepository.update(id, updates);
+    const updatedArticle = await this.articleRepository.update(id, updateQuery);
 
     return updatedArticle;
   };

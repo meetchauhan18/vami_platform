@@ -35,7 +35,7 @@ app.use((req, res, next) => {
 });
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.VITE_FRONTEND_URL,
     credentials: true,
     optionsSuccessStatus: 200,
   })
@@ -56,7 +56,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // health route
-app.get("/health", async (req, res) => {
+app.get("/api/v1/health", async (req, res) => {
   const dbStatus =
     mongoose.connection.readyState === 1 ? "connected" : "disconnected";
 
