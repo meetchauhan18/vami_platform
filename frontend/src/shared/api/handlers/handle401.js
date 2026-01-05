@@ -1,6 +1,9 @@
 // libs imports
 import axios from "axios";
 
+// local imports
+import { urlBuilder } from "../../constants/urlBuilder.js";
+
 // let variables to manage token refresh state
 let isRefreshing = false;
 let queue = [];
@@ -16,9 +19,7 @@ const processQueue = (error) => {
 // function to refresh the access token
 const refreshToken = () => {
   return axios.post(
-    `${import.meta.env.VITE_BACKEND_URL}${
-      import.meta.env.VITE_API_VERSION
-    }/auth/refresh-token`,
+    urlBuilder.auth.refresh(),
     {},
     { withCredentials: true }
   );

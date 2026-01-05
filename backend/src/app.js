@@ -56,7 +56,7 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // health route
-app.get("/api/v1/health", async (req, res) => {
+app.get("/health", async (req, res) => {
   const dbStatus =
     mongoose.connection.readyState === 1 ? "connected" : "disconnected";
 
