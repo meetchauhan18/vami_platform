@@ -1,0 +1,25 @@
+/* import tailwindcss */
+@import "tailwindcss";
+
+/* import tokens */
+@import "./tokens.css";
+
+/* import Theme packs */
+@import "./themes/vami-light.css";
+@import "./themes/vami-dark.css";
+
+/* apply theme */
+html {
+  background: var(--bg-app);
+  color: var(--text-primary);
+}
+
+body {
+  margin: 0;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}

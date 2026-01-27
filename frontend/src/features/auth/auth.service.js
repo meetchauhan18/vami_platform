@@ -12,7 +12,7 @@ class AuthService extends BaseService {
     return this.post("register", payload, {
       requestSchema: RegisterRequestSchema,
     });
-  }
+  } 
 
   login(payload) {
     return this.post("login", payload, {

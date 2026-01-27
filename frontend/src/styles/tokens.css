@@ -1,0 +1,33 @@
+:root {
+  /* ===== ACCENT ===== */
+  --accent: initial;
+  --accent-hover: initial;
+  --accent-active: initial;
+  --accent-fg: initial;
+
+  /* ===== BACKGROUNDS ===== */
+  --bg-app: initial;
+  --bg-surface: initial;
+  --bg-elevated: initial;
+
+  /* ===== TEXT ===== */
+  --text-primary: initial;
+  --text-secondary: initial;
+  --text-muted: initial;
+  --text-inverse: initial;
+
+  /* ===== BORDERS ===== */
+  --border-default: initial;
+  --border-strong: initial;
+
+  /* ===== STATES ===== */
+  --state-success: initial;
+  --state-warning: initial;
+  --state-danger: initial;
+  --state-info: initial;
+
+  /* ===== ACCESSIBILITY ===== */
+  --focus-ring: initial;
+  --disabled-bg: initial;
+  --disabled-text: initial;
+}

@@ -1,0 +1,33 @@
+[data-theme="vami-light"] {
+  /* Accent */
+  --accent: #facc15;
+  --accent-hover: #eab308;
+  --accent-active: #ca8a04;
+  --accent-fg: #1f2937;
+
+  /* Backgrounds */
+  --bg-app: #ffffff;
+  --bg-surface: #f9fafb;
+  --bg-elevated: #ffffff;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+
+  /* Borders */
+  --border-default: #e5e7eb;
+  --border-strong: #d1d5db;
+
+  /* States */
+  --state-success: #16a34a;
+  --state-warning: #f59e0b;
+  --state-danger: #dc2626;
+  --state-info: #2563eb;
+
+  /* Accessibility */
+  --focus-ring: rgba(250, 204, 21, 0.45);
+  --disabled-bg: #f3f4f6;
+  --disabled-text: #9ca3af;
+}
